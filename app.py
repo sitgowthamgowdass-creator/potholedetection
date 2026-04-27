@@ -9,7 +9,7 @@ import os
 # model = YOLO("yolov8n.pt")
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 UPLOAD_FOLDER = "static"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
