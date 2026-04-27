@@ -2,7 +2,7 @@ import requests
 import os
 import time
 
-url = "http://127.0.0.1:5000/detect"
+url = "https://potholedetection-mqs9.onrender.com/detect"
 
 IMAGE_FOLDER = "images"   # put your images here
 
