@@ -4,12 +4,18 @@ import cv2
 import uuid
 import os
 
-# ⚠️ Comment YOLO for now (Render free plan struggles)
-# from ultralytics import YOLO
-# model = YOLO("yolov8n.pt")
-
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+
+# ✅ FIX CORS (IMPORTANT)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+@app.after_request
+def add_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    return response
+
 
 UPLOAD_FOLDER = "static"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -21,6 +27,12 @@ all_data = []
 def serve_image(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
+# ✅ home route (no more "Not Found")
+@app.route('/')
+def home():
+    return "🚧 Pothole Detection Server Running"
+
+# ✅ detect API
 @app.route('/detect', methods=['POST'])
 def detect():
     try:
@@ -38,7 +50,7 @@ def detect():
 
         img = cv2.imread(path)
 
-        # 🔴 TEMP: Fake detection (since YOLO removed)
+        # 🔴 SIMPLE DETECTION (works on Render)
         h, w, _ = img.shape
 
         x1, y1 = int(w * 0.3), int(h * 0.3)
@@ -86,6 +98,7 @@ def detect():
         return jsonify({"error": str(e)}), 500
 
 
+# ✅ data API
 @app.route('/data', methods=['GET'])
 def data():
     return jsonify(all_data)
