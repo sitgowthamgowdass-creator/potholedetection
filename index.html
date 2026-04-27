@@ -53,7 +53,7 @@ function initMap(lat, lon) {
 }
 
 async function loadData() {
-    let res = await fetch("http://127.0.0.1:5000/data");
+    let res = await fetch("https://potholedetection-mqs9.onrender.com/data");
     let data = await res.json();
 
     if (!data.length) return;
@@ -71,7 +71,7 @@ async function loadData() {
         let box = document.createElement("div");
 
         let img = document.createElement("img");
-        img.src = "http://127.0.0.1:5000/" + d.image + "?" + Math.random();
+        img.src = "https://potholedetection-mqs9.onrender.com/" + d.image + "?" + Math.random();
 
         let text = document.createElement("p");
         text.innerText = "Potholes: " + d.count;
