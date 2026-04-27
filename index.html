@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pothole Dashboard</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+body { background:#424858; color:white; font-family:sans-serif; }
+.container { padding:20px; }
+.card { background:#1e293b; padding:20px; border-radius:15px; margin-bottom:20px; }
+
+#gallery { display:flex; flex-wrap:wrap; }
+
+#gallery div { margin:10px; }
+#gallery img { width:200px; border-radius:10px; }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>🚧 Smart Pothole Detection</h1>
+
+<div class="card">
+<h2>Total Potholes: <span id="count">0</span></h2>
+</div>
+
+<div class="card">
+<h3>Images</h3>
+<div id="gallery"></div>
+</div>
+
+<div id="map" style="height:400px;"></div>
+
+</div>
+
+<script>
+let map;
+let marker;
+let potholeMarkers = [];
+
+function initMap(lat, lon) {
+    map = L.map('map').setView([lat, lon], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    marker = L.marker([lat, lon]).addTo(map)
+        .bindPopup("Vehicle Location").openPopup();
+}
+
+async function loadData() {
+    let res = await fetch("http://127.0.0.1:5000/data");
+    let data = await res.json();
+
+    if (!data.length) return;
+
+    // total count
+    let total = 0;
+    data.forEach(d => total += d.count);
+    document.getElementById("count").innerText = total;
+
+    // gallery
+    let gallery = document.getElementById("gallery");
+    gallery.innerHTML = "";
+
+    data.forEach(d => {
+        let box = document.createElement("div");
+
+        let img = document.createElement("img");
+        img.src = "http://127.0.0.1:5000/" + d.image + "?" + Math.random();
+
+        let text = document.createElement("p");
+        text.innerText = "Potholes: " + d.count;
+
+        box.appendChild(img);
+        box.appendChild(text);
+
+        gallery.appendChild(box);
+    });
+
+    let last = data[data.length - 1];
+
+    if (!map) {
+        initMap(last.lat, last.lon);
+    } else {
+        map.setView([last.lat, last.lon]);
+        marker.setLatLng([last.lat, last.lon]);
+    }
+
+    potholeMarkers.forEach(m => map.removeLayer(m));
+    potholeMarkers = [];
+
+    data.forEach(d => {
+        if (d.potholes) {
+            d.potholes.forEach(p => {
+                let m = L.marker([p.lat, p.lon]).addTo(map)
+                    .bindPopup("Pothole");
+                potholeMarkers.push(m);
+            });
+        }
+    });
+}
+
+window.onload = () => {
+    loadData();
+    setInterval(loadData, 3000);
+};
+</script>
+
+</body>
+</html>
