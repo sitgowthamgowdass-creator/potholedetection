@@ -1,115 +1,322 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Pothole Dashboard</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<meta charset="UTF-8">
+<title>Smart Pothole Detection Dashboard</title>
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-body { background:#424858; color:white; font-family:sans-serif; }
-.container { padding:20px; }
-.card { background:#1e293b; padding:20px; border-radius:15px; margin-bottom:20px; }
 
-#gallery { display:flex; flex-wrap:wrap; }
+body{
+background:#1e293b;
+font-family:Arial;
+color:white;
+margin:0;
+}
 
-#gallery div { margin:10px; }
-#gallery img { width:200px; border-radius:10px; }
+header{
+background:#0f172a;
+padding:20px;
+text-align:center;
+font-size:28px;
+font-weight:bold;
+}
+
+.container{
+padding:20px;
+}
+
+.card{
+
+background:#334155;
+
+padding:15px;
+
+border-radius:10px;
+
+margin-bottom:20px;
+
+}
+
+#gallery{
+
+display:flex;
+
+flex-wrap:wrap;
+
+gap:20px;
+
+}
+
+.imageCard{
+
+background:#0f172a;
+
+padding:10px;
+
+border-radius:10px;
+
+width:280px;
+
+}
+
+.imageCard img{
+
+width:100%;
+
+border-radius:10px;
+
+}
+
+#map{
+
+height:500px;
+
+border-radius:10px;
+
+margin-top:20px;
+
+}
+
+.info{
+
+margin-top:10px;
+
+font-size:15px;
+
+}
+
 </style>
+
 </head>
 
 <body>
+
+<header>
+
+🚧 Smart Pothole Detection Dashboard
+
+</header>
+
 <div class="container">
 
-<h1>🚧 Smart Pothole Detection</h1>
-
 <div class="card">
-<h2>Total Potholes: <span id="count">0</span></h2>
+
+<h2>Total Potholes :
+<span id="count">0</span>
+
+</h2>
+
 </div>
 
 <div class="card">
-<h3>Images</h3>
+
+<h2>Detected Images</h2>
+
 <div id="gallery"></div>
+
 </div>
 
-<div id="map" style="height:400px;"></div>
+<div class="card">
+
+<h2>Vehicle & Pothole Location</h2>
+
+<div id="map"></div>
+
+</div>
 
 </div>
 
 <script>
+
 let map;
-let marker;
-let potholeMarkers = [];
 
-function initMap(lat, lon) {
-    map = L.map('map').setView([lat, lon], 15);
+let vehicleMarker;
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-    }).addTo(map);
+let potholeMarkers=[];
 
-    marker = L.marker([lat, lon]).addTo(map)
-        .bindPopup("Vehicle Location").openPopup();
+let previousData="";
+
+function initMap(lat,lon){
+
+map=L.map("map").setView([lat,lon],18);
+
+L.tileLayer(
+
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+
+{
+
+attribution:'© OpenStreetMap'
+
 }
 
-async function loadData() {
-    let res = await fetch("https://potholedetection-mqs9.onrender.com/data");
-    let data = await res.json();
+).addTo(map);
 
-    if (!data.length) return;
+vehicleMarker=L.marker([lat,lon])
 
-    // total count
-    let total = 0;
-    data.forEach(d => total += d.count);
-    document.getElementById("count").innerText = total;
+.addTo(map)
 
-    // gallery
-    let gallery = document.getElementById("gallery");
-    gallery.innerHTML = "";
+.bindPopup("🚗 Vehicle")
 
-    data.forEach(d => {
-        let box = document.createElement("div");
+.openPopup();
 
-        let img = document.createElement("img");
-        img.src = "https://potholedetection-mqs9.onrender.com/" + d.image + "?" + Math.random();
-
-        let text = document.createElement("p");
-        text.innerText = "Potholes: " + d.count;
-
-        box.appendChild(img);
-        box.appendChild(text);
-
-        gallery.appendChild(box);
-    });
-
-    let last = data[data.length - 1];
-
-    if (!map) {
-        initMap(last.lat, last.lon);
-    } else {
-        map.setView([last.lat, last.lon]);
-        marker.setLatLng([last.lat, last.lon]);
-    }
-
-    potholeMarkers.forEach(m => map.removeLayer(m));
-    potholeMarkers = [];
-
-    data.forEach(d => {
-        if (d.potholes) {
-            d.potholes.forEach(p => {
-                let m = L.marker([p.lat, p.lon]).addTo(map)
-                    .bindPopup("Pothole");
-                potholeMarkers.push(m);
-            });
-        }
-    });
 }
 
-window.onload = () => {
-    loadData();
-    setInterval(loadData, 3000);
-};
+async function loadData(){
+
+try{
+
+const res=await fetch("https://potholedetection-mqs9.onrender.com/data");
+
+const data=await res.json();
+
+if(data.length===0) return;
+
+const current=JSON.stringify(data);
+
+if(current===previousData)
+
+return;
+
+previousData=current;
+
+let total=0;
+
+data.forEach(d=>total+=d.count);
+
+document.getElementById("count").innerHTML=total;
+
+const gallery=document.getElementById("gallery");
+
+gallery.innerHTML="";
+
+if(!map){
+
+initMap(data[data.length-1].lat,
+
+data[data.length-1].lon);
+
+}
+
+vehicleMarker.setLatLng(
+
+[data[data.length-1].lat,
+
+data[data.length-1].lon]
+
+);
+
+map.setView(
+
+[data[data.length-1].lat,
+
+data[data.length-1].lon],18);
+
+potholeMarkers.forEach(m=>map.removeLayer(m));
+
+potholeMarkers=[];
+
+data.forEach(d=>{
+
+const card=document.createElement("div");
+
+card.className="imageCard";
+
+const img=document.createElement("img");
+
+img.src="https://potholedetection-mqs9.onrender.com/"+d.image;
+
+const txt=document.createElement("div");
+
+txt.className="info";
+
+txt.innerHTML=
+
+"<b>Potholes :</b> "+d.count+
+
+"<br><b>Latitude :</b> "+d.lat+
+
+"<br><b>Longitude :</b> "+d.lon+
+
+"<br><b>Width :</b> "+d.width+
+
+"<br><b>Height :</b> "+d.height+
+
+"<br><b>Severity :</b> "+(d.severity || "Unknown");
+
+card.appendChild(img);
+
+card.appendChild(txt);
+
+gallery.appendChild(card);
+
+if(d.potholes){
+
+d.potholes.forEach(p=>{
+
+let marker=L.circleMarker(
+
+[p.lat,p.lon],
+
+{
+
+radius:10,
+
+color:"red",
+
+fillColor:"red",
+
+fillOpacity:1
+
+}
+
+).addTo(map);
+
+marker.bindPopup(
+
+"<b>🚧 Pothole</b><br>"+
+
+"Width : "+p.width+
+
+"<br>Height : "+p.height
+
+);
+
+potholeMarkers.push(marker);
+
+});
+
+}
+
+});
+
+}
+
+catch(err){
+
+console.log(err);
+
+}
+
+}
+
+window.onload=function(){
+
+loadData();
+
+/* Refresh every 10 seconds */
+setInterval(loadData,10000);
+
+}
+
 </script>
 
 </body>
+
 </html>
